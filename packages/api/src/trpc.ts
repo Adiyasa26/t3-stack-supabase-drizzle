@@ -6,12 +6,12 @@
  * tl;dr - this is where all the tRPC server stuff is created and plugged in.
  * The pieces you will need to use are documented accordingly near the end
  */
+import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { SupabaseAuthClient } from "@supabase/supabase-js/dist/module/lib/SupabaseAuthClient";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { auth } from "@acme/auth";
-import type { Session } from "@acme/auth";
 import { db } from "@acme/db";
 
 /**
@@ -24,7 +24,8 @@ import { db } from "@acme/db";
  *
  */
 interface CreateContextOptions {
-  session: Session | null;
+  user: User | null;
+  auth: SupabaseAuthClient | null;
 }
 
 /**
@@ -38,7 +39,8 @@ interface CreateContextOptions {
  */
 const createInnerTRPCContext = (opts: CreateContextOptions) => {
   return {
-    session: opts.session,
+    user: opts.user,
+    auth: opts.auth,
     db,
   };
 };
@@ -47,18 +49,26 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
  * This is the actual context you'll use in your router. It will be used to
  * process every request that goes through your tRPC endpoint
  * @link https://trpc.io/docs/context
+ *
  */
+
 export const createTRPCContext = async (opts: {
   req?: Request;
-  auth?: Session;
+  supabase?: SupabaseClient;
 }) => {
-  const session = opts.auth ?? (await auth());
-  const source = opts.req?.headers.get("x-trpc-source") ?? "unknown";
+  const token = opts?.req?.headers?.get("authorization");
 
-  console.log(">>> tRPC Request from", source, "by", session?.user);
+  const supabase = opts?.supabase;
+
+  const response = token
+    ? await opts.supabase?.auth.getUser(token)
+    : await opts.supabase?.auth.getUser();
+
+  const { data } = response ?? {};
 
   return createInnerTRPCContext({
-    session,
+    user: data?.user ?? null,
+    auth: supabase?.auth ?? null,
   });
 };
 
@@ -109,13 +119,13 @@ export const publicProcedure = t.procedure;
  * procedure
  */
 const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
-  if (!ctx.session?.user) {
+  if (!ctx.user || ctx.user.role !== "authenticated") {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   return next({
     ctx: {
-      // infers the `session` as non-nullable
-      session: { ...ctx.session, user: ctx.session.user },
+      user: ctx.user,
+      auth: ctx.auth,
     },
   });
 });
