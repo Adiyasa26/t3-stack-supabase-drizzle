@@ -10,11 +10,15 @@
     "lint": "eslint .",
     "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "push": "drizzle-kit push:mysql",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:introspect": "drizzle-kit introspect:pg",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:migrate": "npx bun run migrate.ts"
   },
   "dependencies": {
     "@planetscale/database": "^1.11.0",
-    "drizzle-orm": "^0.28.6"
+    "drizzle-orm": "^0.28.6",
+    "postgres": "^3.3.5"
   },
   "devDependencies": {
     "@acme/eslint-config": "^0.2.0",
