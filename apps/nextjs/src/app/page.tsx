@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { api } from "~/utils/api";
@@ -16,8 +15,10 @@ export const runtime = "edge";
 export default function HomePage() {
   const router = useRouter();
 
-  const { data: session } = api.auth.getSession.useQuery();
-  const { data: greetings } = api.post.greeting.useQuery();
+  const { data: session, isLoading: sessionIsLoading } =
+    api.auth.getSession.useQuery();
+  const { data: greetings, isLoading: greetingsIsLoading } =
+    api.post.greeting.useQuery();
 
   async function signOut() {
     const response = await fetch("/api/auth/sign-out", {
@@ -34,21 +35,23 @@ export default function HomePage() {
         <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
           Create <span className="text-pink-400">T3</span> Turbo
         </h1>
-        <h1>{greetings}</h1>
+        <h1>{greetingsIsLoading ? "loading..." : greetings}</h1>
         <div className="flex gap-2">
           {!session?.data?.session ? (
-            <Link
-              href="/login"
-              className="mb-2 rounded border border-gray-700 bg-white px-4 py-2 text-black transition-all hover:scale-105"
+            <button
+              onClick={() => router.push("/login")}
+              disabled={sessionIsLoading}
+              className={`mb-2 rounded border border-gray-700 bg-white px-4 py-2 text-black transition-all hover:scale-105`}
             >
-              Sign Up
-            </Link>
+              {sessionIsLoading ? "Loading..." : "Sign Up"}
+            </button>
           ) : (
             <button
               onClick={signOut}
-              className="mb-2 rounded border border-gray-700 bg-red-500 px-4 py-2 text-white transition-all hover:scale-105"
+              disabled={sessionIsLoading}
+              className={`mb-2 rounded border border-gray-700 bg-red-500 px-4 py-2 text-white transition-all hover:scale-105`}
             >
-              Sign out
+              {sessionIsLoading ? "Loading..." : "Sign Out"}
             </button>
           )}
         </div>

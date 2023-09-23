@@ -2,7 +2,14 @@ import Link from "next/link";
 
 import Messages from "./messages";
 
-export default function Login() {
+interface Props {
+  params: Record<string, string>;
+  searchParams: Record<string, string>;
+}
+
+export default function Login(props: Props) {
+  const callbackUrl = props?.searchParams?.callbackUrl ?? null;
+
   return (
     <div className="flex min-h-screen w-screen items-center justify-center">
       <div className="mx-auto my-auto flex w-full flex-1 flex-col justify-center gap-2 px-8 sm:max-w-md">
@@ -29,7 +36,9 @@ export default function Login() {
 
         <form
           className="text-foreground flex w-full flex-1 flex-col justify-center gap-2"
-          action="/api/auth/sign-in"
+          action={`/api/auth/sign-in${
+            callbackUrl ? `?callbackUrl=${callbackUrl}` : ""
+          }`}
           method="post"
         >
           <label className="text-md" htmlFor="email">
