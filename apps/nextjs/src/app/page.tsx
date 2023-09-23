@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { api } from "~/utils/api";
 import {
@@ -13,13 +14,18 @@ import {
 export const runtime = "edge";
 
 export default function HomePage() {
-  const { data } = api.post.greeting.useQuery();
+  const router = useRouter();
+
+  const { data: session } = api.auth.getSession.useQuery();
+  const { data: greetings } = api.post.greeting.useQuery();
 
   async function signOut() {
-    await fetch("/api/auth/sign-out", {
+    const response = await fetch("/api/auth/sign-out", {
       method: "POST",
       mode: "cors",
     });
+
+    router.push(response?.url);
   }
 
   return (
@@ -28,20 +34,23 @@ export default function HomePage() {
         <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
           Create <span className="text-pink-400">T3</span> Turbo
         </h1>
-        <h1>{data}</h1>
+        <h1>{greetings}</h1>
         <div className="flex gap-2">
-          <Link
-            href="/login"
-            className="mb-2 rounded border border-gray-700 bg-white px-4 py-2 text-black transition-all hover:scale-105"
-          >
-            Sign Up
-          </Link>
-          <button
-            onClick={signOut}
-            className="bg-red mb-2 rounded border border-gray-700 px-4 py-2 text-black transition-all hover:scale-105"
-          >
-            Sign out
-          </button>
+          {!session?.data?.session ? (
+            <Link
+              href="/login"
+              className="mb-2 rounded border border-gray-700 bg-white px-4 py-2 text-black transition-all hover:scale-105"
+            >
+              Sign Up
+            </Link>
+          ) : (
+            <button
+              onClick={signOut}
+              className="mb-2 rounded border border-gray-700 bg-red-500 px-4 py-2 text-white transition-all hover:scale-105"
+            >
+              Sign out
+            </button>
+          )}
         </div>
 
         <CreatePostForm />
